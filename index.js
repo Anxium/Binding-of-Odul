@@ -15,4 +15,4 @@ app.get('/', (req, res) => res.render('index'))
 
 // Propulse le serveur sur le port choisi
 const port = 3000
-http.listen(process.env.PORT || port, () => console.log(`Serveur propulsé sur le port ${port}`))
+http.listen(process.env.PORT || port, () => console.log(`Serveur propulsé sur l'adresse: http://localhost:`+port+`/`))
