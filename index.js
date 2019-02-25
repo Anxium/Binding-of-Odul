@@ -9,6 +9,7 @@ app.set('view engine', 'pug')
 // STATIC
 app.use(express.static('./assets'))
 app.use(express.static('./node_modules/phaser/dist'))
+app.use(express.static('./node_modules/@mikewesthad/dungeon/dist'))
 
 // ROUTES
 app.get('/', (req, res) => res.render('index'))
