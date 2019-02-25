@@ -32,18 +32,17 @@ function preload() {
 let player 
 
 const TILES = {
-    BLANK: 20,
     WALL: {
         TOP_LEFT: 0,
         TOP_RIGHT: 2,
         BOTTOM_RIGHT: 24,
         BOTTOM_LEFT: 22,
-        TOP: [{ index: 1, weight: 4 }],
-        LEFT: [{ index: 11, weight: 4 }],
-        RIGHT: [{ index: 13, weight: 4 }],
-        BOTTOM: [{ index: 23, weight: 4 }]
+        TOP: [{ index: 1, weight: 4 }, { index: [25], weight: 1 }],
+        LEFT: [{ index: 11, weight: 4 }, { index: [26], weight: 1 }],
+        RIGHT: [{ index: 13, weight: 4 }, { index: [27], weight: 1 }],
+        BOTTOM: [{ index: 23, weight: 4 }, { index: [28], weight: 1 }]
     },
-    FLOOR: [{ index: 12, weight: 9 }, { index: [3, 4, 5, 6, 14, 15, 16, 17], weight: 1 }],
+    FLOOR: [{ index: 12, weight: 6 }, { index: [3, 4, 5, 6, 14, 15, 16, 17], weight: 1 }],
     DOOR: {
         TOP: [1, 12, 1],
         LEFT: [
@@ -67,24 +66,22 @@ function create() {
         height: 50,
         doorPadding: 5,
         rooms: {
-            width: { min: 10, max: 10, onlyOdd: true },
-            height: { min: 10, max: 10, onlyOdd: true },
+            width: { min: 12, max: 24 },
+            height: { min: 10, max: 16 },
             maxRooms: 8
         }
     }) 
 
     // Creating a blank tilemap with dimensions matching the dungeon
     const map = this.make.tilemap({
-        tileWidth: 72,
-        tileHeight: 72,
+        tileWidth: 70,
+        tileHeight: 70,
         width: this.dungeon.width,
         height: this.dungeon.height
     })
-    const tileset = map.addTilesetImage("tiles", null, 72, 72, 0, 0)
+    const tileset = map.addTilesetImage("tiles", null, 70, 70, 1, 2)
     const groundLayer = map.createBlankDynamicLayer("Ground", tileset)
     const stuffLayer = map.createBlankDynamicLayer("Stuff", tileset)
-
-    groundLayer.fill(TILES.BLANK) 
 
     // Use the array of rooms generated to place tiles in the map
     // Note: using an arrow function here so that "this" still refers to our scene
