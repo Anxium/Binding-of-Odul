@@ -32,7 +32,7 @@ function preload() {
 let player
 
 const TILES = {
-    BLANK: 30,
+    BLANK: 1, // Case noir a mettre 
     WALL: {
         TOP_LEFT: 0,
         TOP_RIGHT: 2,
@@ -63,8 +63,41 @@ const TILES = {
     OBSTACLE: [29]
 }
 
-function create() {
 
+class TilemapVisibility {
+    constructor(shadowLayer) {
+        this.shadowLayer = shadowLayer;
+        this.activeRoom = null;
+    }
+
+    setActiveRoom(room) {
+        // We only need to update the tiles if the active room has changed
+        if (room !== this.activeRoom) {
+            this.setRoomAlpha(room, 0); // Make the new room visible
+            if (this.activeRoom) this.setRoomAlpha(this.activeRoom, 0.5); // Dim the old room
+            this.activeRoom = room;
+        }
+    }
+
+    // Helper to set the alpha on all tiles within a room
+    setRoomAlpha(room, alpha) {
+        this.shadowLayer.forEachTile(
+            t => (t.alpha = alpha),
+            this,
+            room.x,
+            room.y,
+            room.width,
+            room.height
+        );
+    }
+}
+
+let tilemapVisibility
+let level = 0;
+
+function create() {
+    level++
+    
     this.dungeon = new Dungeon({
         width: 80,
         height: 80,
@@ -84,8 +117,11 @@ function create() {
         height: this.dungeon.height
     })
     const tileset = map.addTilesetImage("tiles", null, 78, 78, 1, 2)
-    const groundLayer = map.createBlankDynamicLayer("Ground", tileset).fill(TILES.BLANK);
+    groundLayer = map.createBlankDynamicLayer("Ground", tileset).fill(TILES.BLANK);
     const stuffLayer = map.createBlankDynamicLayer("Stuff", tileset)
+
+    const shadowLayer = map.createBlankDynamicLayer("Shadow", tileset).fill(TILES.BLANK);
+    this.tilemapVisibility = new TilemapVisibility(shadowLayer);
 
     // Use the array of rooms generated to place tiles in the map
     // Note: using an arrow function here so that "this" still refers to our scene
@@ -200,9 +236,21 @@ function create() {
     camera.startFollow(player)
     camera.setBounds(0, 0, map.widthInPixels, map.heightInPixels)
 
+    stuffLayer.setTileIndexCallback(TILES.STAIRS, () => {
+        stuffLayer.setTileIndexCallback(TILES.STAIRS, null);
+        this.hasPlayerReachedStairs = true;
+        const cam = this.cameras.main;
+        cam.fade(250, 0, 0, 0);
+        cam.once("camerafadeoutcomplete", () => {
+            this.scene.restart();
+        });
+    });
+
 }
 
-function update() {
+function update(time, delta) {
+
+    player.update();
 
     // Mouvement effectué grâce au clavier
     cursors = this.input.keyboard.createCursorKeys()
@@ -232,5 +280,13 @@ function update() {
     else {
         player.setVelocityY(0)
     }
+
+    // Find the player's room using another helper method from the dungeon that converts from
+    // dungeon XY (in grid units) to the corresponding room instance
+    const playerTileX = groundLayer.worldToTileX(player.x);
+    const playerTileY = groundLayer.worldToTileY(player.y);
+    const playerRoom = this.dungeon.getRoomAt(playerTileX, playerTileY);
+
+    this.tilemapVisibility.setActiveRoom(playerRoom);
 
 }
