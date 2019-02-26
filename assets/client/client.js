@@ -33,7 +33,7 @@ function preload() {
 let player
 
 const TILES = {
-    BLANK: 1, // Case noir a mettre 
+    BLANK: 33, // Case noir a mettre 
     WALL: {
         TOP_LEFT: 0,
         TOP_RIGHT: 2,
@@ -96,6 +96,8 @@ class TilemapVisibility {
 let tilemapVisibility
 let level = 0;
 
+function create() {
+
     const Bullet = new Phaser.Class({
 
         Extends: Phaser.GameObjects.Image,
@@ -136,7 +138,6 @@ let level = 0;
         runChildUpdate: true
     });
 
-function create() {
     level++
     
     this.dungeon = new Dungeon({
@@ -329,8 +330,9 @@ function update(time, delta) {
         player.setVelocityY(160)
 
         player.anims.play('down', true)
+    }
     else {
-        player.setVelocityX(0)
+        player.setVelocity(0)
 
         player.anims.play('turn')
     }
