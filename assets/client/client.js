@@ -20,7 +20,8 @@ const game = new Phaser.Game(config)
 
 function preload() {
 
-    this.load.image("tiles", "img/tilesets/tiles_ju.png") 
+    this.load.image("tiles", "img/tilesets/tiles_ju.png")
+    this.load.image("bullet", "img/bullet.png")
 
     this.load.spritesheet('dude',
         'img/spiderbot.png',
@@ -60,6 +61,46 @@ const TILES = {
 }
 
 function create() {
+
+    const Bullet = new Phaser.Class({
+
+        Extends: Phaser.GameObjects.Image,
+
+        initialize:
+
+        function Bullet (scene)
+        {
+            Phaser.GameObjects.Image.call(this, scene, 0, 0, 'bullet');
+
+            this.speed = Phaser.Math.GetSpeed(400, 1);
+        },
+
+        fire: function (x, y)
+        {
+            this.setPosition(x, y - 50);
+
+            this.setActive(true);
+            this.setVisible(true);
+        },
+
+        update: function (time, delta)
+        {
+            this.y -= this.speed * delta;
+
+            if (this.y < -50)
+            {
+                this.setActive(false);
+                this.setVisible(false);
+            }
+        }
+
+    });
+
+    bullets = this.add.group({
+        classType: Bullet,
+        maxSize: 10,
+        runChildUpdate: true
+    });
 
     this.dungeon = new Dungeon({
         width: 50,
@@ -149,7 +190,7 @@ function create() {
 
     this.anims.create({
         key: 'up',
-        frames: this.anims.generateFrameNumbers('dude', { start: 9, end: 13 }),
+        frames: this.anims.generateFrameNumbers('dude', { start: 9, end: 12 }),
         frameRate: 20,
         repeat: -1
     })
@@ -186,13 +227,7 @@ function update() {
 
         player.anims.play('right', true)
     }
-    else {
-        player.setVelocityX(0)
-
-        player.anims.play('turn')
-    }
-
-    if (cursors.up.isDown) {
+    else if (cursors.up.isDown) {
         player.setVelocityY(-160)
 
         player.anims.play('up', true)
@@ -203,8 +238,18 @@ function update() {
         player.anims.play('down', true)
     }
     else {
-        player.setVelocityY(0)
+        player.setVelocity(0)
 
+        player.anims.play('turn')
     }
 
+    if (cursors.space.isDown)
+    {
+        const bullet = bullets.get();
+
+        if (bullet)
+        {
+            bullet.fire(player.x, player.y);
+        }
+    }
 }
