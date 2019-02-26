@@ -43,7 +43,7 @@ const TILES = {
         RIGHT: [{ index: 13, weight: 4 }, { index: [27], weight: 1 }],
         BOTTOM: [{ index: 23, weight: 4 }, { index: [28], weight: 1 }]
     },
-    FLOOR: [{ index: 12, weight: 6 }, { index: [3, 4, 5, 6, 14, 15, 16, 17], weight: 1 }],
+    FLOOR: [{ index: 12, weight: 6 }, { index: [3, 4, 6, 14, 15, 16, 17], weight: 1 }],
     DOOR: {
         TOP: [1, 12, 1],
         LEFT: [
@@ -72,7 +72,7 @@ function create() {
         rooms: {
             width: { min: 12, max: 24, onlyOdd: true },
             height: { min: 10, max: 16, onlyOdd: true },
-            maxRooms: 3
+            maxRooms: 5
         }
     })
 
@@ -84,7 +84,7 @@ function create() {
         height: this.dungeon.height
     })
     const tileset = map.addTilesetImage("tiles", null, 78, 78, 1, 2)
-    const groundLayer = map.createBlankDynamicLayer("Ground", tileset)
+    const groundLayer = map.createBlankDynamicLayer("Ground", tileset).fill(TILES.BLANK);
     const stuffLayer = map.createBlankDynamicLayer("Stuff", tileset)
 
     // Use the array of rooms generated to place tiles in the map
@@ -123,10 +123,6 @@ function create() {
         }
     })
 
-    // Not exactly correct for the tileset since there are more possible floor tiles, but this will
-    // do for the example.
-    groundLayer.setCollisionByExclusion([12, 3, 4, 5, 6, 14, 15, 16, 17, 20, 18])
-
     // Separate out the rooms into:
     //  - The starting room (index = 0)
     //  - A random room to be designated as the end room (with stairs and nothing else)
@@ -134,7 +130,7 @@ function create() {
     const rooms = this.dungeon.rooms.slice();
     const startRoom = rooms.shift();
     const endRoom = Phaser.Utils.Array.RemoveRandomElement(rooms);
-    const otherRooms = Phaser.Utils.Array.Shuffle(rooms).slice(0, rooms.length * 0.9);
+    const otherRooms = Phaser.Utils.Array.Shuffle(rooms).slice(0, rooms.length);
 
     // Place the stairs
     stuffLayer.putTileAt(TILES.STAIRS, endRoom.centerX, endRoom.centerY);
@@ -142,31 +138,34 @@ function create() {
     // Place stuff in the 90% "otherRooms"
     otherRooms.forEach(room => {
 
+        const rand = Math.random();
+        if (rand <= 0.25) {
+            // 25% chance of chest
+            stuffLayer.putTileAt(TILES.CHEST, room.centerX, room.centerY);
+        } else if (rand <= 0.5) {
+            // 50% chance of a pot anywhere in the room... except don't block a door!
+            const x = Phaser.Math.Between(room.left + 2, room.right - 2);
+            const y = Phaser.Math.Between(room.top + 2, room.bottom - 2);
+            stuffLayer.weightedRandomize(x, y, 1, 1, TILES.OBSTACLE);
+        } else {
+            // 25% of either 2 or 4 towers, depending on the room size
+            if (room.height >= 9) {
+                stuffLayer.putTilesAt(TILES.OBSTACLE, room.centerX - 2, room.centerY + 2);
+                stuffLayer.putTilesAt(TILES.OBSTACLE, room.centerX + 2, room.centerY + 2);
+                stuffLayer.putTilesAt(TILES.OBSTACLE, room.centerX - 2, room.centerY - 2);
+                stuffLayer.putTilesAt(TILES.OBSTACLE, room.centerX + 2, room.centerY - 2);
+            } else {
+                stuffLayer.putTilesAt(TILES.OBSTACLE, room.centerX - 2, room.centerY - 2);
+                stuffLayer.putTilesAt(TILES.OBSTACLE, room.centerX + 2, room.centerY - 2);
+            }
+        }
 
-        stuffLayer.putTileAt(TILES.CHEST, room.centerX, room.centerY);
-
-        // const rand = Math.random();
-        // if (rand <= 0.25) {
-        //     // 25% chance of chest
-        //     stuffLayer.putTileAt(TILES.CHEST, room.centerX, room.centerY);
-        // } else if (rand <= 0.5) {
-        //     // 50% chance of a pot anywhere in the room... except don't block a door!
-        //     const x = Phaser.Math.Between(room.left + 2, room.right - 2);
-        //     const y = Phaser.Math.Between(room.top + 2, room.bottom - 2);
-        //     stuffLayer.weightedRandomize(x, y, 1, 1, TILES.OBSTACLE);
-        // } else {
-        //     // 25% of either 2 or 4 towers, depending on the room size
-        //     if (room.height >= 9) {
-        //         stuffLayer.putTilesAt(TILES.OBSTACLE, room.centerX - 2, room.centerY + 2);
-        //         stuffLayer.putTilesAt(TILES.OBSTACLE, room.centerX + 2, room.centerY + 2);
-        //         stuffLayer.putTilesAt(TILES.OBSTACLE, room.centerX - 2, room.centerY - 2);
-        //         stuffLayer.putTilesAt(TILES.OBSTACLE, room.centerX + 2, room.centerY - 2);
-        //     } else {
-        //         stuffLayer.putTilesAt(TILES.OBSTACLE, room.centerX - 2, room.centerY - 2);
-        //         stuffLayer.putTilesAt(TILES.OBSTACLE, room.centerX + 2, room.centerY - 2);
-        //     }
-        // }
     });
+
+    // Not exactly correct for the tileset since there are more possible floor tiles, but this will
+    // do for the example.
+    groundLayer.setCollisionByExclusion([-1, 12, 3, 4, 5, 6, 14, 15, 16, 17, 20, 18])
+    stuffLayer.setCollisionByExclusion([-1, 12, 3, 4, 5, 6, 14, 15, 16, 17, 20, 18])
 
     // Place the player in the center of the map. This works because the Dungeon generator places the first room in the center of the map.
     // 
