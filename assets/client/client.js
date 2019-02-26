@@ -23,8 +23,8 @@ function preload() {
     this.load.image("tiles", "img/tilesets/tiles_ju.png") 
 
     this.load.spritesheet('dude',
-        'img/odul.png',
-        { frameWidth: 60, frameHeight: 72 }
+        'img/spiderbot.png',
+        { frameWidth: 50, frameHeight: 68 }
     )
 
 }
@@ -130,7 +130,7 @@ function create() {
     this.anims.create({
         key: 'left',
         frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 3 }),
-        frameRate: 10,
+        frameRate: 20,
         repeat: -1
     })
 
@@ -143,7 +143,21 @@ function create() {
     this.anims.create({
         key: 'right',
         frames: this.anims.generateFrameNumbers('dude', { start: 5, end: 8 }),
-        frameRate: 10,
+        frameRate: 20,
+        repeat: -1
+    })
+
+    this.anims.create({
+        key: 'up',
+        frames: this.anims.generateFrameNumbers('dude', { start: 9, end: 13 }),
+        frameRate: 20,
+        repeat: -1
+    })
+
+    this.anims.create({
+        key: 'down',
+        frames: this.anims.generateFrameNumbers('dude', { start: 14, end: 17 }),
+        frameRate: 20,
         repeat: -1
     })
 
@@ -180,12 +194,17 @@ function update() {
 
     if (cursors.up.isDown) {
         player.setVelocityY(-160)
+
+        player.anims.play('up', true)
     }
     else if (cursors.down.isDown) {
         player.setVelocityY(160)
+
+        player.anims.play('down', true)
     }
     else {
         player.setVelocityY(0)
+
     }
 
 }
