@@ -111,12 +111,15 @@ function create() {
             this.speed = Phaser.Math.GetSpeed(400, 1);
         },
 
-        fire: function (x, y)
+        fire: function (x, y, angle)
         {
             this.setPosition(x, y - 50);
 
             this.setActive(true);
             this.setVisible(true);
+
+            this.dx = Math.cos(angle);
+            this.dy = Math.sin(angle);
         },
 
         update: function (time, delta)
@@ -134,7 +137,6 @@ function create() {
 
     bullets = this.add.group({
         classType: Bullet,
-        maxSize: 10,
         runChildUpdate: true
     });
 
@@ -343,7 +345,8 @@ function update(time, delta) {
 
         if (bullet)
         {
-            bullet.fire(player.x, player.y);
+            let angle = Phaser.Math.Angle.Between(this.x, this.y);
+            bullet.fire(player.x, player.y, angle);
         }
     }
     // Find the player's room using another helper method from the dungeon that converts from
