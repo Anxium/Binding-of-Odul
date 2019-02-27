@@ -7,7 +7,7 @@ const config = {
         default: 'arcade',
         arcade: {
             gravity: { y: 0 },
-            debug: false
+            debug: true
         }
     },
     scene: {
@@ -21,91 +21,30 @@ const game = new Phaser.Game(config)
 function preload() {
 
     this.load.image("tiles", "img/tilesets/tiles_ju.png")
+    this.load.image("bullet", "img/bullet.png")
 
     this.load.spritesheet('dude',
         'img/odul.png',
-        { frameWidth: 60, frameHeight: 72 }
+        { frameWidth: 37, frameHeight: 60, }
     )
 
 }
 
-let player
-
-const TILES = {
-    BLANK: 1, // Case noir a mettre 
-    WALL: {
-        TOP_LEFT: 0,
-        TOP_RIGHT: 2,
-        BOTTOM_RIGHT: 24,
-        BOTTOM_LEFT: 22,
-        TOP: [{ index: 1, weight: 4 }, { index: [25], weight: 1 }],
-        LEFT: [{ index: 11, weight: 4 }, { index: [26], weight: 1 }],
-        RIGHT: [{ index: 13, weight: 4 }, { index: [27], weight: 1 }],
-        BOTTOM: [{ index: 23, weight: 4 }, { index: [28], weight: 1 }]
-    },
-    FLOOR: [{ index: 12, weight: 6 }, { index: [3, 4, 6, 14, 15, 16, 17], weight: 1 }],
-    DOOR: {
-        TOP: [1, 12, 1],
-        LEFT: [
-            [11],
-            [12],
-            [11]
-        ],
-        BOTTOM: [23, 12, 23],
-        RIGHT: [
-            [13],
-            [12],
-            [13]
-        ]
-    },
-    CHEST: [30],
-    STAIRS: [32],
-    OBSTACLE: [29]
-}
-
-
-class TilemapVisibility {
-    constructor(shadowLayer) {
-        this.shadowLayer = shadowLayer;
-        this.activeRoom = null;
-    }
-
-    setActiveRoom(room) {
-        // We only need to update the tiles if the active room has changed
-        if (room !== this.activeRoom) {
-            this.setRoomAlpha(room, 0); // Make the new room visible
-            if (this.activeRoom) this.setRoomAlpha(this.activeRoom, 0.5); // Dim the old room
-            this.activeRoom = room;
-        }
-    }
-
-    // Helper to set the alpha on all tiles within a room
-    setRoomAlpha(room, alpha) {
-        this.shadowLayer.forEachTile(
-            t => (t.alpha = alpha),
-            this,
-            room.x,
-            room.y,
-            room.width,
-            room.height
-        );
-    }
-}
-
-let tilemapVisibility
-let level = 0;
+let self = null
+let level = 0
 
 function create() {
+
     level++
-    
+
     this.dungeon = new Dungeon({
         width: 80,
         height: 80,
         doorPadding: 4,
         rooms: {
-            width: { min: 12, max: 24, onlyOdd: true },
-            height: { min: 10, max: 16, onlyOdd: true },
-            maxRooms: 5
+            width: { min: 10, max: 22, onlyOdd: true },
+            height: { min: 8, max: 14, onlyOdd: true },
+            maxRooms: 12
         }
     })
 
@@ -203,9 +142,53 @@ function create() {
     groundLayer.setCollisionByExclusion([-1, 12, 3, 4, 5, 6, 14, 15, 16, 17, 20, 18])
     stuffLayer.setCollisionByExclusion([-1, 12, 3, 4, 5, 6, 14, 15, 16, 17, 20, 18])
 
-    // Place the player in the center of the map. This works because the Dungeon generator places the first room in the center of the map.
-    // 
-    player = this.physics.add.sprite(map.widthInPixels / 2, map.heightInPixels / 2, 'dude')
+    self = this
+    this.socket = io()
+    this.otherPlayers = this.physics.add.group();
+    this.socket.on('currentPlayers', (players) => {
+        Object.keys(players).forEach(id => {
+            if (players[id].playerId === self.socket.id) {
+                // Place the player in the center of the map. This works because the Dungeon generator places the first room in the center of the map.
+                self.player = self.physics.add.sprite((map.widthInPixels / 2) + 50, map.heightInPixels / 2, 'dude')
+
+                // Watch the player and layer for collisions, for the duration of the scene:
+                self.physics.add.collider(self.player, groundLayer)
+                self.physics.add.collider(self.player, stuffLayer)
+
+                // Phaser supports multiple cameras, but you can access the default camera like this:
+                const camera = this.cameras.main
+                camera.startFollow(self.player)
+                camera.setBounds(0, 0, map.widthInPixels, map.heightInPixels)
+
+            }
+            else 
+            {
+                // Place the player in the center of the map. This works because the Dungeon generator places the first room in the center of the map.
+                const otherPlayer = self.physics.add.sprite(map.widthInPixels / 2, map.heightInPixels / 2, 'dude')
+
+                otherPlayer.playerId = players[id].playerId
+                self.otherPlayers.add(otherPlayer)
+
+            }
+        })
+    })
+
+    this.socket.on('newPlayer', (playerInfo) => {
+        // Place the player in the center of the map. This works because the Dungeon generator places the first room in the center of the map.
+        const otherPlayer = self.physics.add.sprite(map.widthInPixels / 2, map.heightInPixels / 2, 'dude')
+
+        otherPlayer.playerId = playerInfo.playerId;
+        self.otherPlayers.add(otherPlayer);
+
+    })
+
+    this.socket.on('disconnect', (playerId) => {
+        self.otherPlayers.getChildren().forEach(otherPlayer => {
+            if (playerId === otherPlayer.playerId) {
+                otherPlayer.destroy()
+            }
+        })
+    })
 
     this.anims.create({
         key: 'left',
@@ -227,66 +210,113 @@ function create() {
         repeat: -1
     })
 
-    // Watch the player and layer for collisions, for the duration of the scene:
-    this.physics.add.collider(player, groundLayer)
-    this.physics.add.collider(player, stuffLayer)
+    this.anims.create({
+        key: 'up',
+        frames: this.anims.generateFrameNumbers('dude', { start: 9, end: 11 }),
+        frameRate: 10,
+        repeat: -1
+    })
 
-    // Phaser supports multiple cameras, but you can access the default camera like this:
-    const camera = this.cameras.main
-    camera.startFollow(player)
-    camera.setBounds(0, 0, map.widthInPixels, map.heightInPixels)
+    this.anims.create({
+        key: 'down',
+        frames: this.anims.generateFrameNumbers('dude', { start: 12, end: 13 }),
+        frameRate: 10,
+        repeat: -1
+    })
 
-    stuffLayer.setTileIndexCallback(TILES.STAIRS, () => {
-        stuffLayer.setTileIndexCallback(TILES.STAIRS, null);
-        this.hasPlayerReachedStairs = true;
-        const cam = this.cameras.main;
-        cam.fade(250, 0, 0, 0);
-        cam.once("camerafadeoutcomplete", () => {
-            this.scene.restart();
+    this.cursors = this.input.keyboard.createCursorKeys();
+
+    this.socket.on('playerMoved', playerInfo => {
+        self.otherPlayers.getChildren().forEach( otherPlayer=> {
+            if (playerInfo.playerId === otherPlayer.playerId) {
+                otherPlayer.setPosition(playerInfo.x, playerInfo.y);
+                otherPlayer.anims.play(playerInfo.turn, true)
+            }
         });
     });
-
 }
 
 function update(time, delta) {
 
-    player.update();
+    if (self.player) {
 
-    // Mouvement effectué grâce au clavier
-    cursors = this.input.keyboard.createCursorKeys()
+        const player = self.player
+        let turn = 'turn'
 
-    if (cursors.left.isDown) {
-        player.setVelocityX(-300)
+        player.update();
 
-        player.anims.play('left', true)
+        let left = self.cursors.left.isDown
+        let right = self.cursors.right.isDown
+        let up = self.cursors.up.isDown
+        let down = self.cursors.down.isDown
+
+        if (up && left) {
+            player.setVelocityY(-150)
+            player.setVelocityX(-150)
+            player.anims.play('left', true)
+            turn = 'left'
+        } else if (up && right) {
+            player.setVelocityY(-150)
+            player.setVelocityX(150)
+            player.anims.play('right', true)
+            turn = 'right'
+        } else if (up) {
+            player.setVelocityY(-150)
+            player.setVelocityX(0)
+            player.anims.play('up', true)
+            turn = 'up'
+        } else if (down && left) {
+            player.setVelocityY(150)
+            player.setVelocityX(-150)
+            player.anims.play('left', true)
+            turn = 'left'
+        } else if (down && right) {
+            player.setVelocityY(150)
+            player.setVelocityX(150)
+            player.anims.play('right', true)
+            turn = 'right'
+        } else if (down) {
+            player.setVelocityY(150)
+            player.setVelocityX(0)
+            player.anims.play('down', true)
+            turn = 'down'
+        } else if (left) {
+            player.setVelocityY(0)
+            player.setVelocityX(-150)
+            player.anims.play('left', true)
+            turn = 'left'
+        } else if (right) {
+            player.setVelocityY(0)
+            player.setVelocityX(150)
+            player.anims.play('right', true)
+            turn = 'right'
+        } else {
+            player.setVelocity(0)
+            player.anims.play('turn', true)
+            turn = 'turn'
+        }
+
+        // Find the player's room using another helper method from the dungeon that converts from
+        // dungeon XY (in grid units) to the corresponding room instance
+        const playerTileX = groundLayer.worldToTileX(player.x);
+        const playerTileY = groundLayer.worldToTileY(player.y);
+        const playerRoom = this.dungeon.getRoomAt(playerTileX, playerTileY);
+        this.tilemapVisibility.setActiveRoom(playerRoom);
+
+        // emit player movement
+        const x = player.x;
+        const y = player.y;
+        if (player.oldPosition && (x !== player.oldPosition.x || y !== player.oldPosition.y)) {
+            this.socket.emit('playerMovement', { x: player.x, y: player.y, turn: turn });
+        }
+
+        // save old position data
+        player.oldPosition = {
+            x: player.x,
+            y: player.y,
+            turn: turn
+        };
+
     }
-    else if (cursors.right.isDown) {
-        player.setVelocityX(300)
-
-        player.anims.play('right', true)
-    }
-    else {
-        player.setVelocityX(0)
-
-        player.anims.play('turn')
-    }
-
-    if (cursors.up.isDown) {
-        player.setVelocityY(-300)
-    }
-    else if (cursors.down.isDown) {
-        player.setVelocityY(300)
-    }
-    else {
-        player.setVelocityY(0)
-    }
-
-    // Find the player's room using another helper method from the dungeon that converts from
-    // dungeon XY (in grid units) to the corresponding room instance
-    const playerTileX = groundLayer.worldToTileX(player.x);
-    const playerTileY = groundLayer.worldToTileY(player.y);
-    const playerRoom = this.dungeon.getRoomAt(playerTileX, playerTileY);
-
-    this.tilemapVisibility.setActiveRoom(playerRoom);
 
 }
