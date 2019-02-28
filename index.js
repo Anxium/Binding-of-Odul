@@ -25,7 +25,7 @@ const dungeon = new Dungeon({
     rooms: {
         width: { min: 8, max: 22, onlyOdd: true },
         height: { min: 8, max: 14, onlyOdd: true },
-        maxRooms: 2
+        maxRooms: 12
     }
 })
 
