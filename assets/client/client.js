@@ -7,7 +7,7 @@ const config = {
         default: 'arcade',
         arcade: {
             gravity: { y: 0 },
-            debug: true
+            debug: false
         }
     },
     scene: {
@@ -23,9 +23,10 @@ function preload() {
     this.load.image("tiles", "img/tilesets/tiles_ju.png")
     this.load.image("bullet", "img/bullet.png")
 
-    this.load.spritesheet('dude',
+    this.load.spritesheet(
+        'dude',
         'img/odul.png',
-        { frameWidth: 37, frameHeight: 60, }
+        { frameWidth: 37, frameHeight: 60 }
     )
 
 }
@@ -33,32 +34,15 @@ function preload() {
 let groundLayer
 let stuffLayer
 let map = []
-let dungeon = []
 let self = null
-let level = 0
 
 function create() {
 
     this.socket = io()
 
-    level++
-
     this.socket.on('map', dungeon => {
 
-        const dungeon2 = new Dungeon({
-            width: 80,
-            height: 80,
-            doorPadding: 4,
-            rooms: {
-                width: { min: 8, max: 22, onlyOdd: true },
-                height: { min: 8, max: 14, onlyOdd: true },
-                maxRooms: 2
-            }
-        })
-
         this.dungeon = dungeon
-
-        console.log(this.dungeon)
 
         // Creating a blank tilemap with dimensions matching the dungeon
         map = this.make.tilemap({
@@ -71,8 +55,8 @@ function create() {
         groundLayer = map.createBlankDynamicLayer("Ground", tileset).fill(TILES.BLANK);
         stuffLayer = map.createBlankDynamicLayer("Stuff", tileset)
 
-        // const shadowLayer = map.createBlankDynamicLayer("Shadow", tileset).fill(TILES.BLANK);
-        // this.tilemapVisibility = new TilemapVisibility(shadowLayer);
+        const shadowLayer = map.createBlankDynamicLayer("Shadow", tileset).fill(TILES.BLANK);
+        this.tilemapVisibility = new TilemapVisibility(shadowLayer);
 
         // Use the array of rooms generated to place tiles in the map
         // Note: using an arrow function here so that "this" still refers to our scene
@@ -97,9 +81,8 @@ function create() {
             // Dungeons have rooms that are connected with doors. Each door has an x & y relative to the
             // room's location. Each direction has a different door to tile mapping.
             
-            const doors = []
-
             // find all the doors and add their positions to the list
+            const doors = []
             for (let y = 0; y < room.height; y++) {
                 for (let x = 0; x < room.width; x++) {
                     if (room.tiles[y][x] == 3) {
@@ -107,8 +90,6 @@ function create() {
                     }
                 }
             }
-
-            console.log(doors)
 
             for (let i = 0; i < doors.length; i++) {
                 if (doors[i].y === 0) {
@@ -122,8 +103,6 @@ function create() {
                 }
             }
 
-            
-
         })
 
         // Separate out the rooms into:
@@ -132,26 +111,21 @@ function create() {
         //  - An array of 90% of the remaining rooms, for placing random stuff (leaving 10% empty)
         const rooms = this.dungeon.rooms.slice();
         const startRoom = rooms.shift();
-        const endRoom = Phaser.Utils.Array.RemoveRandomElement(rooms);
-        const otherRooms = Phaser.Utils.Array.Shuffle(rooms).slice(0, rooms.length);
+        const endRoom = rooms.pop()
 
         // Place the stairs
         stuffLayer.putTileAt(TILES.STAIRS, endRoom.centerX, endRoom.centerY);
 
         // Place stuff in the 90% "otherRooms"
-        otherRooms.forEach(room => {
+        rooms.forEach((room, index) => {
 
-            const rand = Math.random();
-            if (rand <= 0.25) {
-                // 25% chance of chest
-                stuffLayer.putTileAt(TILES.CHEST, room.centerX, room.centerY);
-            } else if (rand <= 0.5) {
-                // 50% chance of a pot anywhere in the room... except don't block a door!
-                const x = Phaser.Math.Between(room.left + 2, room.right - 2);
-                const y = Phaser.Math.Between(room.top + 2, room.bottom - 2);
-                stuffLayer.weightedRandomize(x, y, 1, 1, TILES.OBSTACLE);
-            } else {
-                // 25% of either 2 or 4 towers, depending on the room size
+
+            // if (rand <= 0.25) {
+            //     // 25% chance of chest
+            //     stuffLayer.putTileAt(TILES.CHEST, room.centerX, room.centerY);
+            // } else 
+            
+            if (rooms.length%index == 0) {
                 if (room.height >= 9) {
                     stuffLayer.putTilesAt(TILES.OBSTACLE, room.centerX - 2, room.centerY + 2);
                     stuffLayer.putTilesAt(TILES.OBSTACLE, room.centerX + 2, room.centerY + 2);
@@ -326,10 +300,17 @@ function update(time, delta) {
 
         // // Find the player's room using another helper method from the dungeon that converts from
         // // dungeon XY (in grid units) to the corresponding room instance
-        // const playerTileX = groundLayer.worldToTileX(player.x);
-        // const playerTileY = groundLayer.worldToTileY(player.y);
-        // const playerRoom = this.dungeon.getRoomAt(playerTileX, playerTileY);
-        // this.tilemapVisibility.setActiveRoom(playerRoom);
+        const playerTileX = groundLayer.worldToTileX(player.x);
+        const playerTileY = groundLayer.worldToTileY(player.y);
+        let playerRoom;
+
+        if (playerTileX < 0 || playerTileY < 0 || playerTileX >= this.dungeon.width || playerTileY >= this.dungeon.height) {
+            playerRoom = null
+        } else {
+            playerRoom = this.dungeon.roomGrid[playerTileY][playerTileX][0];
+        }
+
+        this.tilemapVisibility.setActiveRoom(playerRoom);
 
         // emit player movement
         const x = player.x;
