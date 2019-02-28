@@ -21,12 +21,13 @@ const game = new Phaser.Game(config)
 function preload() {
 
     this.load.image("tiles", "img/tilesets/tiles_ju.png")
-    this.load.image("bullet", "img/bullet.png")
-
+    
     this.load.spritesheet('dude',
         'img/spiderbot.png',
-        { frameWidth: 50, frameHeight: 68 }
+        { frameWidth: 44, frameHeight: 60 }
     )
+
+    this.load.image("bullet", "img/bullet.png")
 
 }
 
@@ -96,6 +97,11 @@ class TilemapVisibility {
 let tilemapVisibility
 let level = 0;
 
+let bullets;
+let speed;
+let lastFired = 0;
+
+
 function create() {
 
     const Bullet = new Phaser.Class({
@@ -111,21 +117,42 @@ function create() {
             this.speed = Phaser.Math.GetSpeed(400, 1);
         },
 
-        fire: function (x, y, angle)
+        fire: function (player)
         {
-            this.setPosition(x, y - 50);
+            this.setPosition(player.x, player.y);
 
+            this.flip = 'front';
             this.setActive(true);
             this.setVisible(true);
 
-            this.dx = Math.cos(angle);
-            this.dy = Math.sin(angle);
+            if (player.flip == 'front')
+            {
+                this.speed = Phaser.Math.GetSpeed(-400, 1);
+            }
+            else if (player.flip == 'up')
+            {
+                this.speed = Phaser.Math.GetSpeed(400, 1);
+            }
+            else if (player.flip == 'left')
+            {
+                this.speed = Phaser.Math.GetSpeed(400, 1);
+            }
+            else if (player.flip == 'right')
+            {
+                this.speed = Phaser.Math.GetSpeed(-400, 1);
+            }
         },
 
         update: function (time, delta)
         {
-            this.y -= this.speed * delta;
-
+            if(player.flip == 'front' || player.flip == 'up')
+            {
+                this.y -= this.speed * delta;
+            }
+            else if(player.flip == 'right' || player.flip == 'left')
+            {
+                this.x -= this.speed * delta;
+            }
             if (this.y < -50)
             {
                 this.setActive(false);
@@ -137,6 +164,7 @@ function create() {
 
     bullets = this.add.group({
         classType: Bullet,
+        // maxSize: 10,
         runChildUpdate: true
     });
 
@@ -309,44 +337,81 @@ function create() {
 function update(time, delta) {
 
     player.update();
+    const bullet = bullets.get();
 
     // Mouvement effectué grâce au clavier
     cursors = this.input.keyboard.createCursorKeys()
 
-    if (cursors.left.isDown) {
-        player.setVelocityX(-300)
+    const left = cursors.left.isDown
+    const right = cursors.right.isDown
+    const up = cursors.up.isDown
+    const down = cursors.down.isDown
 
+    if (up && left)
+    {
+        player.setVelocityY(-150)
+        player.setVelocityX(-150)
         player.anims.play('left', true)
     }
-    else if (cursors.right.isDown) {
-        player.setVelocityX(300)
-
+    else if (up && right)
+    {
+        player.setVelocityY(-150)
+        player.setVelocityX(150)
         player.anims.play('right', true)
     }
-    else if (cursors.up.isDown) {
-        player.setVelocityY(-160)
-
+    else if (up)
+    {
+        player.setVelocityY(-150)
+        player.setVelocityX(0)
+        player.flip = 'up'
         player.anims.play('up', true)
     }
-    else if (cursors.down.isDown) {
-        player.setVelocityY(160)
-
+    else if (down && left)
+    {
+        player.setVelocityY(150)
+        player.setVelocityX(-150)
+        player.anims.play('left', true)
+    }
+    else if (down && right)
+    {
+        player.setVelocityY(150)
+        player.setVelocityX(150)
+        player.anims.play('right', true)
+    }
+    else if (down)
+    {
+        player.setVelocityY(150)
+        player.setVelocityX(0)
+        player.flip = 'front'
         player.anims.play('down', true)
     }
-    else {
+    else if (left)
+    {
+        player.setVelocityY(0)
+        player.setVelocityX(-150)
+        player.flip = 'left'
+        player.anims.play('left', true)
+    }
+    else if (right)
+    {
+        player.setVelocityY(0)
+        player.setVelocityX(150)
+        player.flip = 'right'
+        player.anims.play('right', true)
+    } 
+    else
+    {
         player.setVelocity(0)
-
-        player.anims.play('turn')
+        player.anims.play('turn', true)
     }
 
     if (cursors.space.isDown)
     {
-        const bullet = bullets.get();
-
         if (bullet)
         {
-            let angle = Phaser.Math.Angle.Between(this.x, this.y);
-            bullet.fire(player.x, player.y, angle);
+            bullet.fire(player);
+
+            // lastFired = time + 50;
         }
     }
     // Find the player's room using another helper method from the dungeon that converts from
