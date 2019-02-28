@@ -3,6 +3,7 @@ const app = express()
 const http = require('http').Server(app)
 const io = require('socket.io')(http)
 const pug = require('pug')
+const Dungeon = require('@mikewesthad/dungeon')
 
 // AUTRE
 app.set('view engine', 'pug')
@@ -16,10 +17,23 @@ app.use(express.static('./node_modules/@mikewesthad/dungeon/dist'))
 // ROUTES
 app.get('/', (req, res) => res.render('index'))
 
+// MAP
+const dungeon = new Dungeon({
+    width: 80,
+    height: 80,
+    doorPadding: 4,
+    rooms: {
+        width: { min: 8, max: 22, onlyOdd: true },
+        height: { min: 8, max: 14, onlyOdd: true },
+        maxRooms: 2
+    }
+})
+
 // EVENTS
 const players = {}
 
 io.on('connection', (socket) => {
+    socket.emit('map', dungeon)
     // create a new player and add it to our players object
     players[socket.id] = {
         playerId: socket.id,
@@ -33,7 +47,6 @@ io.on('connection', (socket) => {
         io.emit('disconnect', socket.id) // emit a message to all players to remove this player
         console.log('INFO: a player disconnected')
     })
-
 
     // when a player moves, update the player data
     socket.on('playerMovement', movementData => {
