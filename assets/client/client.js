@@ -130,7 +130,9 @@ function create() {
         // Place stuff in the 90% "otherRooms"
         otherRooms.forEach(room => {
 
-            const rand = Math.random();
+        //    const rand = Math.random();
+            const rand = 1
+            
             if (rand <= 0.25) {
                 // 25% chance of chest
                 stuffLayer.putTileAt(TILES.CHEST, room.centerX, room.centerY);
