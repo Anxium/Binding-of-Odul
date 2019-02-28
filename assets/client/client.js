@@ -45,17 +45,6 @@ function create() {
 
     this.socket.on('map', dungeon => {
 
-        const dungeon2 = new Dungeon({
-            width: 80,
-            height: 80,
-            doorPadding: 4,
-            rooms: {
-                width: { min: 8, max: 22, onlyOdd: true },
-                height: { min: 8, max: 14, onlyOdd: true },
-                maxRooms: 2
-            }
-        })
-
         this.dungeon = dungeon
 
         console.log(this.dungeon)
