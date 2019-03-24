@@ -1,6 +1,5 @@
-# Binding of Odul
+# Binding of Odul - 1er prix du jury ♥
 Jeu multijoueur créé en nodeJS pour la GameJam organisée par Ludovic Patho à BeCode - Charleroi (CRL-Turing-2.6)
-## 1er prix du Jury♥
 
 ### Packages utilisés 
 1. Express
