@@ -1,5 +1,6 @@
 # Binding of Odul
-Jeu multijoueur créé en nodeJS avec phaser3 pour la GameJam organisée par Ludovic Patho à BeCode - Charleroi (CRL-Turing-2.6)
+Jeu multijoueur créé en nodeJS pour la GameJam organisée par Ludovic Patho à BeCode - Charleroi (CRL-Turing-2.6)
+## 1er prix du Jury♥
 
 ### Packages utilisés 
 1. Express
