@@ -10,8 +10,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@mikewesthad/dungeon": "^1.2.2",
     "express": "^4.16.4",
     "phaser": "^3.16.2",
-    "pug": "^2.0.3"
+    "pug": "^2.0.3",
+    "socket.io": "^2.2.0"
   }
 }
