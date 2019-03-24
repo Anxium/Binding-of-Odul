@@ -2,11 +2,11 @@
 Jeu multijoueur créé en nodeJS avec phaser3 pour la GameJam organisée par Ludovic Patho à BeCode - Charleroi (CRL-Turing-2.6)
 
 ### Packages utilisés 
-i. Express
-i. Phaser 3
-i. Socket.io
-i. Pug
-i. mikewesthad/dungeon
+1. Express
+2. Phaser 3
+3. Socket.io
+4. Pug
+5. mikewesthad/dungeon
 
 #### The team
 Axel Avaux - Project Manager (Fullstack Dev)
