@@ -3,6 +3,8 @@ Binding of Odul est un jeu multijoueur réalisé en NodeJS (avec les packages ci
 
 Le jeu se déroule dans un univers de développeur, où un ordinateur (Dorothy) vole des bouts de code à Odul (notre personnage principal qui est aussi notre coach 😇). Le/les joueur(s) (4 maximum) devront combattre divers ennemis dans diverses salles d'un donjon généré aléatoirement à chaque nouveau niveau. Dans ces salles, ils pourront trouver différents bonus qui les aideront, ou les dérangeront dans leur quête.
 
+[Notre jeu](https://binding-of-odul.herokuapp.com/)
+
 ### Packages utilisés 
 1. Express
 2. Phaser 3
